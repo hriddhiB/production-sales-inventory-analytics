@@ -1,113 +1,83 @@
-import pandas as pd
+"""
+analysis.py
+-----------
+Upgraded analysis script supporting both formatted terminal insights
+and optional Matplotlib visualizations.
+"""
+
 import mysql.connector
-import matplotlib.pyplot as plt
-import numpy as np
+from config import DB_CONFIG, get_db_connection
+from analytics import run_all_analytics
 
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password= "Hbnit_05",
-    database="manufacturing_analytics"
-)
+def run_visual_charts():
+    """Generates visual charts if pandas/matplotlib are installed."""
+    try:
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        import numpy as np
 
-products = pd.read_sql("SELECT * FROM products", conn)
-production = pd.read_sql("SELECT * FROM production", conn)
-sales = pd.read_sql("SELECT * FROM sales", conn)
+        conn = get_db_connection(include_database=True)
+        if not conn:
+            print("[INFO] MySQL connection unavailable for matplotlib charts. Run 'streamlit run app.py' for interactive charts.")
+            return
 
-production_summary = production.groupby("product_id")["quantity_produced"].sum().reset_index()
+        print("\n[*] Fetching data for Matplotlib charts...")
+        products = pd.read_sql("SELECT * FROM products", conn)
+        production = pd.read_sql("SELECT * FROM production", conn)
+        sales = pd.read_sql("SELECT * FROM sales", conn)
+        conn.close()
 
-production_summary = production_summary.merge(
-    products[["product_id", "product_name"]],
-    on="product_id"
-)
+        # Merge summaries
+        prod_sum = production.groupby("product_id")["units_produced"].sum().reset_index()
+        sales_sum = sales.groupby("product_id")["units_sold"].sum().reset_index()
 
-sales_summary = sales.groupby("product_id")["quantity_sold"].sum().reset_index()
+        df = products.merge(prod_sum, on="product_id", how="left").fillna(0)
+        df = df.merge(sales_sum, on="product_id", how="left").fillna(0)
+        df["inventory"] = df["units_produced"] - df["units_sold"]
+        df["revenue"] = df["units_sold"] * df["unit_price"]
 
-sales_summary = sales_summary.merge(
-    products[["product_id", "product_name"]],
-    on="product_id"
-)
+        # Chart 1: Production vs Sales
+        x = np.arange(len(df))
+        width = 0.35
+        plt.figure(figsize=(10, 5))
+        plt.bar(x - width/2, df["units_produced"], width, label="Produced", color="#1E88E5")
+        plt.bar(x + width/2, df["units_sold"], width, label="Sold", color="#43A047")
+        plt.xlabel("Product")
+        plt.ylabel("Quantity (Units)")
+        plt.title("Production vs Sales by Product")
+        plt.xticks(x, df["product_name"], rotation=30)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
 
-inventory = production.groupby("product_id")["quantity_produced"].sum().reset_index()
-inventory = inventory.merge(
-    sales.groupby("product_id")["quantity_sold"].sum().reset_index(),
-    on="product_id"
-)
+        # Chart 2: Inventory Gap
+        plt.figure(figsize=(10, 5))
+        plt.bar(df["product_name"], df["inventory"], color="#FB8C00")
+        plt.xlabel("Product")
+        plt.ylabel("Net Stock Level (Units)")
+        plt.title("Warehouse Stock Level by Product")
+        plt.xticks(rotation=30)
+        plt.tight_layout()
+        plt.show()
 
-inventory["inventory"] = (
-    inventory["quantity_produced"] - inventory["quantity_sold"]
-)
+        # Chart 3: Revenue by Product
+        plt.figure(figsize=(10, 5))
+        plt.bar(df["product_name"], df["revenue"], color="#8E24AA")
+        plt.xlabel("Product")
+        plt.ylabel("Revenue (₹)")
+        plt.title("Revenue by Product")
+        plt.xticks(rotation=30)
+        plt.tight_layout()
+        plt.show()
 
-inventory = inventory.merge(
-    products[["product_id", "product_name"]],
-    on="product_id"
-)
+    except ImportError:
+        print("[INFO] Matplotlib not found. Run 'streamlit run app.py' to view interactive web charts!")
 
-
-
-x = np.arange(len(inventory))
-width = 0.35
-
-plt.figure(figsize=(10, 5))
-
-plt.bar(
-    x - width/2,
-    inventory["quantity_produced"],
-    width,
-    label="Produced"
-)
-
-plt.bar(
-    x + width/2,
-    inventory["quantity_sold"],
-    width,
-    label="Sold"
-)
-
-plt.xlabel("Product")
-plt.ylabel("Quantity")
-plt.title("Production vs Sales by Product")
-plt.xticks(x, inventory["product_name"], rotation=30)
-plt.legend()
-plt.tight_layout()
-plt.show()
-plt.figure(figsize=(10, 5))
-
-plt.bar(
-    inventory["product_name"],
-    inventory["inventory"]
-)
-
-plt.xlabel("Product")
-plt.ylabel("Inventory")
-plt.title("Inventory by Product")
-plt.xticks(rotation=30)
-plt.tight_layout()
-plt.show()
-
-revenue = sales.merge(
-    products[["product_id", "product_name", "unit_price"]],
-    on="product_id"
-)
-
-revenue["revenue"] = revenue["quantity_sold"] * revenue["unit_price"]
-
-revenue_summary = (
-    revenue.groupby("product_name")["revenue"]
-    .sum()
-    .reset_index()
-)
-
-plt.figure(figsize=(10, 5))
-
-plt.bar(
-    revenue_summary["product_name"],
-    revenue_summary["revenue"]
-)
-
-plt.xlabel("Product")
-plt.ylabel("Revenue (₹)")
-plt.title("Revenue by Product")
-plt.xticks(rotation=30)
-plt.tight_layout()
-plt.show()
+if __name__ == "__main__":
+    print("=" * 60)
+    print(" RUNNING ANALYTICS PIPELINE")
+    print("=" * 60)
+    # 1. Run standard library terminal reports
+    run_all_analytics()
+    # 2. Optionally trigger visual charts
+    run_visual_charts()

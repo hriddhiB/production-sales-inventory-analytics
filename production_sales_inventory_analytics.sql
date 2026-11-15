@@ -1,190 +1,205 @@
-CREATE DATABASE manufacturing_analytics;
-USE manufacturing_analytics;
-CREATE TABLE products(
-    product_id INT PRIMARY KEY,
-    product_name VARCHAR(50),
-    category VARCHAR(50),
-    unit_price DECIMAL(10,2)
+-- =====================================================================
+-- Production, Sales & Inventory Analytics
+-- Relational Database Schema & Analytical Queries
+-- =====================================================================
+
+-- Step 1: Database Initialization
+CREATE DATABASE IF NOT EXISTS inventory_analytics;
+USE inventory_analytics;
+
+-- Step 2: Create Tables
+-- 1. Products Catalog Table
+CREATE TABLE IF NOT EXISTS products (
+    product_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00
 );
-CREATE TABLE production(
-    production_id INT PRIMARY KEY,
-    product_id INT,
-    production_date DATE,
-    quantity_produced INT,
-    FOREIGN KEY (product_id) REFERENCES products(product_id) -- foreign key connects the product id with other tables
+
+-- 2. Production Batches Table
+CREATE TABLE IF NOT EXISTS production (
+    production_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    units_produced INT NOT NULL,
+    production_date DATE NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
-CREATE TABLE sales(
-    sale_id INT PRIMARY KEY,
-    product_id INT,
-    sale_date DATE,
-    quantity_sold INT,
-    FOREIGN KEY (product_id) REFERENCES products(product_id) -- foreign key connects the product id with other tables
+
+-- 3. Sales Transactions Table
+CREATE TABLE IF NOT EXISTS sales (
+    sale_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    units_sold INT NOT NULL,
+    sale_date DATE NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
 );
-SHOW TABLES;
-INSERT INTO products VALUES
+
+-- 4. Inventory Stock Table
+CREATE TABLE IF NOT EXISTS inventory (
+    inventory_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL UNIQUE,
+    stock_level INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
+);
+
+-- =====================================================================
+-- Step 3: Populate Sample Data
+-- =====================================================================
+
+INSERT INTO products (product_id, product_name, category, unit_price) VALUES
 (1, 'Gear Assembly', 'Mechanical', 1200.00),
 (2, 'Shaft', 'Mechanical', 800.00),
 (3, 'Bearing Housing', 'Component', 1500.00),
 (4, 'Coupling', 'Mechanical', 950.00),
 (5, 'Pulley', 'Mechanical', 700.00),
-(6, 'Bracket', 'Component', 450.00);
+(6, 'Bracket', 'Component', 450.00),
+(7, 'Hydraulic Valve', 'Hydraulics', 2100.00),
+(8, 'Industrial Sensor', 'Electronics', 1850.00)
+ON DUPLICATE KEY UPDATE 
+    product_name = VALUES(product_name),
+    category = VALUES(category),
+    unit_price = VALUES(unit_price);
 
-SELECT*FROM products;
+INSERT INTO production (production_id, product_id, units_produced, production_date) VALUES
+(1,  1, 500, '2026-09-01'),
+(2,  2, 700, '2026-09-01'),
+(3,  3, 300, '2026-09-01'),
+(4,  4, 450, '2026-09-02'),
+(5,  5, 600, '2026-09-02'),
+(6,  6, 800, '2026-09-02'),
+(7,  1, 550, '2026-09-03'),
+(8,  2, 750, '2026-09-03'),
+(9,  3, 350, '2026-09-03'),
+(10, 4, 500, '2026-09-04'),
+(11, 5, 650, '2026-09-04'),
+(12, 6, 900, '2026-09-04'),
+(13, 7, 200, '2026-09-05'),
+(14, 8, 400, '2026-09-05'),
+(15, 7, 250, '2026-09-06'),
+(16, 8, 450, '2026-09-06')
+ON DUPLICATE KEY UPDATE units_produced = VALUES(units_produced);
 
-INSERT INTO production VALUES
-(1, 1, '2026-09-01', 500),
-(2, 2, '2026-09-01', 700),
-(3, 3, '2026-09-01', 300),
-(4, 4, '2026-09-02', 450),
-(5, 5, '2026-09-02', 600),
-(6, 6, '2026-09-02', 800),
-(7, 1, '2026-09-03', 550),
-(8, 2, '2026-09-03', 750),
-(9, 3, '2026-09-03', 350),
-(10, 4, '2026-09-04', 500),
-(11, 5, '2026-09-04', 650),
-(12, 6, '2026-09-04', 900);
+INSERT INTO sales (sale_id, product_id, units_sold, sale_date) VALUES
+(1,  1, 420, '2026-09-02'),
+(2,  2, 600, '2026-09-02'),
+(3,  3, 250, '2026-09-02'),
+(4,  4, 380, '2026-09-03'),
+(5,  5, 500, '2026-09-03'),
+(6,  6, 650, '2026-09-03'),
+(7,  1, 450, '2026-09-04'),
+(8,  2, 620, '2026-09-04'),
+(9,  3, 280, '2026-09-04'),
+(10, 4, 420, '2026-09-05'),
+(11, 5, 550, '2026-09-05'),
+(12, 6, 700, '2026-09-05'),
+(13, 7, 240, '2026-09-07'),
+(14, 8, 390, '2026-09-07'),
+(15, 7, 200, '2026-09-08'),
+(16, 8, 410, '2026-09-08')
+ON DUPLICATE KEY UPDATE units_sold = VALUES(units_sold);
 
-SELECT*FROM production;
-
-INSERT INTO sales VALUES
-(1, 1, '2026-09-02', 420),
-(2, 2, '2026-09-02', 600),
-(3, 3, '2026-09-02', 250),
-(4, 4, '2026-09-03', 380),
-(5, 5, '2026-09-03', 500),
-(6, 6, '2026-09-03', 650),
-(7, 1, '2026-09-04', 450),
-(8, 2, '2026-09-04', 620),
-(9, 3, '2026-09-04', 280),
-(10, 4, '2026-09-05', 420),
-(11, 5, '2026-09-05', 550),
-(12, 6, '2026-09-05', 700);
-
-SELECT*FROM sales;
-
+-- Sync initial inventory (Stock = Produced - Sold)
+INSERT INTO inventory (product_id, stock_level)
 SELECT 
-    product_id,
-    SUM(quantity_produced) AS total_produced
-FROM production
-GROUP BY product_id;
+    p.product_id,
+    COALESCE(prod.total_produced, 0) - COALESCE(s.total_sold, 0) AS stock_level
+FROM products p
+LEFT JOIN (
+    SELECT product_id, SUM(units_produced) AS total_produced
+    FROM production GROUP BY product_id
+) prod ON p.product_id = prod.product_id
+LEFT JOIN (
+    SELECT product_id, SUM(units_sold) AS total_sold
+    FROM sales GROUP BY product_id
+) s ON p.product_id = s.product_id
+ON DUPLICATE KEY UPDATE stock_level = VALUES(stock_level);
 
-SELECT
-    product_id,
-    SUM(quantity_sold) AS total_sold
-FROM sales
-GROUP BY product_id;
+-- =====================================================================
+-- Step 4: Analytical Queries
+-- =====================================================================
 
+-- 1. High-Demand Products (Ranked by Total Units Sold)
 SELECT
     p.product_name,
-    SUM(s.quantity_sold) AS total_sold
+    p.category,
+    p.unit_price,
+    SUM(s.units_sold) AS total_units_sold,
+    SUM(s.units_sold * p.unit_price) AS total_revenue
 FROM products p
-JOIN sales s
-ON p.product_id = s.product_id
-GROUP BY p.product_id, p.product_name;
+JOIN sales s ON p.product_id = s.product_id
+GROUP BY p.product_id, p.product_name, p.category, p.unit_price
+ORDER BY total_units_sold DESC;
 
-SELECT
-    p.product_name,                                  
-    p.unit_price,                                    -- show the unit price
-    SUM(s.quantity_sold) AS total_sold,              -- SUM = add all sold quantities
-    p.unit_price * SUM(s.quantity_sold) AS total_revenue -- * = multiplication
-FROM products p                                      -- FROM = take data from products
-JOIN sales s                                          -- JOIN = connect another table
-ON p.product_id = s.product_id                        -- ON = tell SQL how to connect them
-GROUP BY p.product_id, p.product_name, p.unit_price; -- GROUP BY = make a group for each product
-
+-- 2. Production vs. Sales Gap Analysis (Spotting Excess Stock & Shortages)
 SELECT
     p.product_name,
     pr.total_produced,
     s.total_sold,
-    pr.total_produced - s.total_sold AS inventory
+    (pr.total_produced - s.total_sold) AS net_inventory_gap,
+    ROUND((s.total_sold / pr.total_produced) * 100, 1) AS sell_through_pct,
+    CASE 
+        WHEN (pr.total_produced - s.total_sold) > 150 THEN 'Excess Surplus'
+        WHEN (pr.total_produced - s.total_sold) >= 50 THEN 'Balanced Buffer'
+        ELSE 'Tight Inventory'
+    END AS status
 FROM products p
-
 JOIN (
-    SELECT
-        product_id,
-        SUM(quantity_produced) AS total_produced
+    SELECT product_id, SUM(units_produced) AS total_produced
     FROM production
     GROUP BY product_id
-) pr
-ON p.product_id = pr.product_id
-
+) pr ON p.product_id = pr.product_id
 JOIN (
-    SELECT
-        product_id,
-        SUM(quantity_sold) AS total_sold
+    SELECT product_id, SUM(units_sold) AS total_sold
     FROM sales
     GROUP BY product_id
-) s
-ON p.product_id = s.product_id;
+) s ON p.product_id = s.product_id
+ORDER BY net_inventory_gap DESC;
 
+-- 3. Top Best-Selling Product (Limit 1)
 SELECT
     p.product_name,
-    SUM(s.quantity_sold) AS total_sold
+    SUM(s.units_sold) AS total_sold
 FROM products p
-JOIN sales s
-ON p.product_id = s.product_id
+JOIN sales s ON p.product_id = s.product_id
 GROUP BY p.product_id, p.product_name
 ORDER BY total_sold DESC
 LIMIT 1;
 
+-- 4. Highest Revenue Generating Product
 SELECT
     p.product_name,
-    SUM(s.quantity_sold) AS total_sold,
-    p.unit_price * SUM(s.quantity_sold) AS total_revenue
+    p.unit_price,
+    SUM(s.units_sold) AS total_sold,
+    SUM(s.units_sold * p.unit_price) AS total_revenue
 FROM products p
-JOIN sales s
-ON p.product_id = s.product_id
+JOIN sales s ON p.product_id = s.product_id
 GROUP BY p.product_id, p.product_name, p.unit_price
 ORDER BY total_revenue DESC
 LIMIT 1;
 
+-- 5. Products with Excess Inventory (> 150 Units)
 SELECT
     p.product_name,
-    pr.total_produced,
-    s.total_sold,
-    pr.total_produced - s.total_sold AS inventory
+    (pr.total_produced - s.total_sold) AS excess_units
 FROM products p
 JOIN (
-    SELECT
-        product_id,
-        SUM(quantity_produced) AS total_produced
-    FROM production
-    GROUP BY product_id
-) pr
-ON p.product_id = pr.product_id
+    SELECT product_id, SUM(units_produced) AS total_produced FROM production GROUP BY product_id
+) pr ON p.product_id = pr.product_id
 JOIN (
-    SELECT
-        product_id,
-        SUM(quantity_sold) AS total_sold
-    FROM sales
-    GROUP BY product_id
-) s
-ON p.product_id = s.product_id
-WHERE pr.total_produced - s.total_sold > 200;
+    SELECT product_id, SUM(units_sold) AS total_sold FROM sales GROUP BY product_id
+) s ON p.product_id = s.product_id
+WHERE (pr.total_produced - s.total_sold) > 150;
 
+-- 6. Total Overall Revenue
 SELECT
-    SUM(s.quantity_sold * p.unit_price) AS total_revenue
+    SUM(s.units_sold * p.unit_price) AS total_portfolio_revenue
 FROM sales s
-JOIN products p
-ON s.product_id = p.product_id;
+JOIN products p ON s.product_id = p.product_id;
 
-SELECT
-    AVG(quantity_sold) AS average_units_sold
-FROM sales;
-
-SELECT
-    COUNT(*) AS total_sales_records
-FROM sales;
-
-SELECT
-    MAX(quantity_produced) AS highest_production,
-    MIN(quantity_produced) AS lowest_production
-FROM production;
-
+-- 7. Daily Production Trend
 SELECT
     production_date,
-    SUM(quantity_produced) AS total_produced
+    SUM(units_produced) AS total_produced_on_date
 FROM production
 GROUP BY production_date
-ORDER BY production_date;
+ORDER BY production_date ASC;
