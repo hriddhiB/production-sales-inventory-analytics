@@ -9,7 +9,7 @@ Features both an **Interactive Streamlit Web Dashboard** and a **Lightweight Ter
 ## 📁 Project Structure
 
 ```text
-inventory_analytics/
+production-sales-inventory-analytics/
 │
 ├── app.py                 # 🚀 Interactive Streamlit Web Dashboard (Pre-loaded data)
 ├── main.py                # Interactive CLI menu with one-click launcher
@@ -18,6 +18,8 @@ inventory_analytics/
 ├── database_setup.py      # Automated database and table creation script
 ├── seed_data.py           # Populates clean sample records in MySQL
 ├── analytics.py           # Core business analytics & formatted terminal reports
+├── analysis.py            # Analysis script with optional Matplotlib charts
+├── requirements.txt       # Project dependencies
 └── README.md              # Project documentation and guide
 ```
 
@@ -25,15 +27,19 @@ inventory_analytics/
 
 ## 🚀 How to Launch the Streamlit Web Dashboard
 
-### 1. Open Terminal (PowerShell or Command Prompt)
-Navigate to the project folder:
-```powershell
-cd "C:\Users\RAJIB KUMAR BARUA\.gemini\antigravity\scratch\inventory_analytics"
+### 1. Clone & Navigate into the Project
+```bash
+git clone https://github.com/hriddhiB/production-sales-inventory-analytics.git
+cd production-sales-inventory-analytics
 ```
 
-### 2. Start Streamlit
-Run:
-```powershell
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Start the Web Dashboard
+```bash
 streamlit run app.py
 ```
 *(Or run `python main.py` and select option `5`!)*
